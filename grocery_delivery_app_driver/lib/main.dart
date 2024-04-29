@@ -39,7 +39,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     dashboardScreen(),
-    OrderTrackingPage(),
+    // OrderTrackingPage(lat: 1, long: 1),
     bottomBarScreen(),
   ];
 
@@ -62,10 +62,10 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Tracking Order',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.map),
+          //   label: 'Tracking Order',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle),
             label: 'Profile',

@@ -16,6 +16,7 @@ class dashboardScreen extends StatefulWidget {
 }
 
 class _dashboardScreenState extends State<dashboardScreen> {
+
   @override
   void initState() {
     tz.initializeTimeZones();
@@ -39,7 +40,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
 
   String _formatDateAndTime(Timestamp timestamp) {
     DateTime dateTime = timestamp.toDate();
-    dateTime = dateTime.add(Duration(hours: 8)); // Add 8 hours
+    dateTime = dateTime.add(Duration(hours: 0)); // Add 8 hours
     String formattedDate = DateFormat('dd MMMM yyyy, hh:mm a').format(dateTime);
     return formattedDate;
   }
@@ -64,10 +65,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
               children: [
                 Text(
                   'Hi, Driver',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 FutureBuilder<tz.TZDateTime?>(
@@ -105,7 +103,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
                   Padding(
                     padding: EdgeInsets.only(left: 10, top: 13, right: 10, bottom: 0),
                     child: Text(
-                      'Order Details',
+                      'Pending Orders',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -133,16 +131,20 @@ class _dashboardScreenState extends State<dashboardScreen> {
                           );
                         } else {
                           final docs = snapshot.data?.docs ?? [];
-                          if (docs.isEmpty) {
+                          final pendingOrders = docs.where((doc) => doc['orderStatus'] == 1).toList();
+                          if (pendingOrders.isEmpty) {
                             return Center(
-                              child: Text('No orders available'),
+                              child: Text('No pending orders available'),
                             );
                           } else {
                             return ListView.builder(
-                              itemCount: docs.length,
+                              itemCount: pendingOrders.length,
                               itemBuilder: (context, index) {
-                                Map<String, dynamic> data = docs[index].data() as Map<String, dynamic>;
+                                Map<String, dynamic> data = pendingOrders[index].data() as Map<String, dynamic>;
                                 String imageUrl = data['imageUrl'];
+                                double lat = data['lat'];
+                                double long = data['long'];
+                                String orderId = data['orderId'];
                                 return GestureDetector(
                                   onTap: () {
                                     showDialog(
@@ -154,26 +156,41 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Text(data['title'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                              Text(data['title'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                                               Text('Quantity : ${data['quantity']}'),
-                                              Text('Price : RM ${data['price']?.toStringAsFixed(2) ?? ''}'),
-                                              Text('Order Date: ${_formatDateAndTime(data['orderDate'])}'),
+                                              Text('Order Date & Time: \n${_formatDateAndTime(data['orderDate'])}'),
                                               SizedBox(height: 20),
-                                              Text('User Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                              Text('User Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                                               Text('Name: ${data['userName']}'),
-                                              Text('Email: ${data['phoneNumber']}'),
+                                              Text('Phone Number: ${data['phoneNumber']}'),
                                               Text('Address: ${data['shippingAddress']}'),
                                               SizedBox(height: 20),
-                                              Text('Note Message', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                              Text('Note Message', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                                               Text('Message: ${data['noteForDriver'].isEmpty ? 'Empty' : data['noteForDriver']}'),
+                                              SizedBox(height: 20),
+                                              Text('Payment Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                                              Text('Total Payment : RM ${data['totalPayment']?.toStringAsFixed(2) ?? ''}'),
+                                              Text('Payment Method: ${data['paymentMethod']}'),
                                             ],
                                           ),
                                           actions: [
                                             TextButton(
-                                              onPressed: () {
+                                              onPressed: () async {
+                                                try {
+                                                  await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+                                                    'orderStatus': 2,
+                                                  });
+                                                } catch (error) {
+                                                  print('Error updating document: $error');
+                                                }
                                                 Navigator.pushReplacement(
                                                   context,
-                                                  MaterialPageRoute(builder: (context) => OrderTrackingPage()),
+                                                  MaterialPageRoute(
+                                                    builder: (context) => OrderTrackingPage(
+                                                      lat: lat,
+                                                      long: long,
+                                                    ),
+                                                  ),
                                                 );
                                               },
                                               child: Text('Accept'),
@@ -192,16 +209,18 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                   child: ListTile(
                                     leading: Image.network(
                                       imageUrl,
-                                      width: 80,
-                                      height: 80,
+                                      width: 60,
+                                      height: 100,
                                     ),
-                                    title: Text(data['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold),),
+                                    title: Text(
+                                      data['title'] ?? '',
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
                                     subtitle: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text('Quantity : ${data['quantity']}'),
-                                        Text('Price : RM ${data['price']?.toStringAsFixed(2) ?? ''}'),
-                                        Text(data['orderStatus'].toString() == '0' ? 'The order is pending' : 'The order is accepted'),
+                                        Text('Merchandise Subtotal : \nRM ${data['price']?.toStringAsFixed(2) ?? ''}'),
                                       ],
                                     ),
                                   ),
@@ -216,12 +235,12 @@ class _dashboardScreenState extends State<dashboardScreen> {
                 ],
               ),
             ),
-          ),
+          )
+,
         ],
       ),
     );
   }
-
 
   Future<tz.TZDateTime> getCurrentTime(String timeZone) async {
     tz.Location location = tz.getLocation(timeZone);
