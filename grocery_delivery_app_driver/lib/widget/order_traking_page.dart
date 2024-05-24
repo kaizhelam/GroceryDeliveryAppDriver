@@ -1,20 +1,30 @@
 import 'dart:async';
+import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:grocery_delivery_app_driver/main.dart';
 import 'package:grocery_delivery_app_driver/widget/constants.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:grocery_delivery_app_driver/widget/earning_screen.dart';
 import 'package:location/location.dart';
+import 'package:intl/intl.dart'; // Import DateFormat to format the arrival time
 
 class OrderTrackingPage extends StatefulWidget {
   const OrderTrackingPage({
     Key? key,
     required this.lat,
     required this.long,
+    required this.orderId,
+    required this.driverId,
   }) : super(key: key);
 
   final double lat;
   final double long;
+  final String orderId;
+  final String driverId;
 
   @override
   State<OrderTrackingPage> createState() => _OrderTrackingPageState();
@@ -23,8 +33,9 @@ class OrderTrackingPage extends StatefulWidget {
 class _OrderTrackingPageState extends State<OrderTrackingPage> {
   final Completer<GoogleMapController> _controller = Completer();
 
-  late LatLng sourceLocation;
-  static const LatLng destination = LatLng(2.2536, 102.2815);
+  static const LatLng sourceLocation =
+      LatLng(2.2338, 102.2825); // starting point
+  late LatLng userDestination; // user destination
 
   List<LatLng> polylineCoordinates = [];
   LocationData? currentLocation;
@@ -35,7 +46,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     Location location = Location();
 
     location.getLocation().then(
-          (location) {
+      (location) {
         currentLocation = location;
       },
     );
@@ -43,12 +54,13 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     GoogleMapController googleMapController = await _controller.future;
 
     location.onLocationChanged.listen(
-          (newLoc) {
+      (newLoc) {
+        // print('New location received: $newLoc');
         currentLocation = newLoc;
         googleMapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
-              zoom: 16,
+              zoom: 13.5,
               target: LatLng(
                 newLoc.latitude!,
                 newLoc.longitude!,
@@ -66,13 +78,15 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
       google_api_key,
+      travelMode: TravelMode.driving,
+      optimizeWaypoints: true,
+      PointLatLng(userDestination.latitude, userDestination.longitude),
       PointLatLng(sourceLocation.latitude, sourceLocation.longitude),
-      PointLatLng(destination.latitude, destination.longitude),
     );
 
     if (result.points.isNotEmpty) {
       result.points.forEach(
-            (PointLatLng point) => polylineCoordinates.add(
+        (PointLatLng point) => polylineCoordinates.add(
           LatLng(point.latitude, point.longitude),
         ),
       );
@@ -91,14 +105,16 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   @override
   void initState() {
-    sourceLocation = LatLng(widget.lat, widget.long);
+    // sourceLocation = LatLng(widget.lat, widget.long);
+    userDestination = LatLng(widget.lat, widget.long);
+    print(widget.lat);
+    print(widget.long);
     getCurrentLocation();
     setCustomMarkerIcon();
     getPolyPoints();
     super.initState();
-    setState(() {
-
-    });
+    setState(() {});
+    _checkArrival(context);
   }
 
   StreamSubscription<LocationData>? locationSubscription;
@@ -109,67 +125,171 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     super.dispose();
   }
 
+  bool isLoading = false;
+
   void _refreshPage() {
     setState(() {
-      // Refresh logic here
+      // Set isLoading to true to indicate that loading has started
+      isLoading = true;
     });
+
+    // Perform your refresh logic here
+
+    // After refresh is complete, set isLoading to false
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  double calculateDistance(LatLng point1, LatLng point2) {
+    const double radiusEarth = 6371; // Radius of the Earth in kilometers
+    double lat1 = _toRadians(point1.latitude);
+    double lon1 = _toRadians(point1.longitude);
+    double lat2 = _toRadians(point2.latitude);
+    double lon2 = _toRadians(point2.longitude);
+
+    double dLat = lat2 - lat1;
+    double dLon = lon2 - lon1;
+
+    double a = pow(sin(dLat / 2), 2) +
+        cos(lat1) * cos(lat2) * pow(sin(dLon / 2), 2);
+
+    double c = 2 * asin(sqrt(a));
+
+    return radiusEarth * c;
+  }
+
+  double _toRadians(double degree) {
+    return degree * pi / 180;
+  }
+
+  final double arrivalThreshold = 0.17;
+  double distance = 0.0;
+  String formattedArrivalTime = "";
+  final double averageSpeed = 30;
+
+  void _checkArrival(BuildContext context) {
+    if (currentLocation != null && userDestination != null) {
+      double distanceToDestination = calculateDistance(
+        LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
+        userDestination!,
+      );
+      print('Distance to destination: $distanceToDestination km');
+
+      if (distanceToDestination <= arrivalThreshold) {
+        FirebaseFirestore.instance
+            .collection('orders')
+            .doc(widget.orderId)
+            .update({
+          'orderStatus': 3,
+        }).then((value) {
+          Future.delayed(Duration(seconds: 4), () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MainScreen(driverId: widget.driverId),
+              ),
+            );
+
+            Fluttertoast.showToast(
+              msg: "Product Delivery & Arrived Destination",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 2,
+              backgroundColor: Colors.green,
+              textColor: Colors.white,
+              fontSize: 13,
+            );
+          });
+        }).catchError((error) {
+          print('Error updating document: $error');
+        });
+      } else {
+        print('On the way going');
+      }
+    } else {
+      print('Current location or user destination is null.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Track Order",
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.green,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: _refreshPage,
+    _checkArrival(context);
+
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        body: isLoading
+            ? Center(
+          child: CircularProgressIndicator(),
+        )
+            : currentLocation == null
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 20),
+              Padding(
+                padding: EdgeInsets.all(16.0),
+                child: ElevatedButton(
+                  onPressed: _refreshPage,
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all<Color>(
+                      Colors.cyan,
+                    ),
+                    foregroundColor: MaterialStateProperty.all<Color>(
+                      Colors.white,
+                    ),
+                  ),
+                  child: Text(
+                    "Open Live Google Map & Navigate to User Destination",
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: currentLocation == null
-          ? const Center(child: Text("Loading... it may takes some times \ntap the refresh button \nto quickly track the location."))
-          : GoogleMap(
-        initialCameraPosition: CameraPosition(
-          target: LatLng(
-            currentLocation!.latitude!,
-            currentLocation!.longitude!,
-          ),
-          zoom: 16,
-        ),
-        polylines: {
-          Polyline(
-            polylineId: PolylineId("route"),
-            points: polylineCoordinates,
-            color: primaryColor,
-            width: 6,
-          ),
-        },
-        markers: {
-          Marker(
-            markerId: MarkerId("currentLocation"),
-            icon: sourceIcon,
-            position: LatLng(
+        )
+            : GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: LatLng(
               currentLocation!.latitude!,
               currentLocation!.longitude!,
             ),
+            zoom: 13.5,
           ),
-          Marker(
-            markerId: MarkerId("source"),
-            position: sourceLocation,
-          ),
-          Marker(
-            markerId: MarkerId("destination"),
-            position: destination,
-          ),
-        },
-        onMapCreated: (mapController) {
-          _controller.complete(mapController);
-        },
+          polylines: {
+            Polyline(
+              polylineId: PolylineId("route"),
+              points: polylineCoordinates,
+              color: primaryColor,
+              width: 6,
+            ),
+          },
+          markers: {
+            Marker(
+              markerId: MarkerId("currentLocation"),
+              icon: sourceIcon,
+              position: LatLng(
+                currentLocation!.latitude!,
+                currentLocation!.longitude!,
+              ),
+            ),
+            Marker(
+              markerId: MarkerId("source"),
+              position: userDestination,
+            ),
+            Marker(
+              markerId: MarkerId("destination"),
+              position: sourceLocation,
+            ),
+          },
+          onMapCreated: (mapController) {
+            _controller.complete(mapController);
+          },
+        ),
       ),
     );
   }

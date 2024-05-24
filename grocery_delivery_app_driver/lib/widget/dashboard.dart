@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:grocery_delivery_app_driver/widget/login.dart';
 import 'package:grocery_delivery_app_driver/widget/order_traking_page.dart';
 import 'package:intl/date_time_patterns.dart';
 import 'package:intl/intl.dart';
@@ -9,19 +11,40 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 
 class dashboardScreen extends StatefulWidget {
-  const dashboardScreen({super.key});
+  final String driverId;
+
+  const dashboardScreen({Key? key, required this.driverId}) : super(key: key);
 
   @override
   State<dashboardScreen> createState() => _dashboardScreenState();
 }
 
 class _dashboardScreenState extends State<dashboardScreen> {
+  String _driverName = '';
 
   @override
   void initState() {
+    super.initState();
+    fetchDriverName();
     tz.initializeTimeZones();
     updateTimePeriodically();
-    super.initState();
+  }
+
+  void fetchDriverName() {
+    // Fetch driver's data from Firestore using driverId
+    FirebaseFirestore.instance
+        .collection('drivers')
+        .doc(widget.driverId)
+        .get()
+        .then((doc) {
+      if (doc.exists) {
+        setState(() {
+          _driverName = doc['name'];
+        });
+      }
+    }).catchError((error) {
+      print('Error fetching driver data: $error');
+    });
   }
 
   void updateTimePeriodically() {
@@ -40,7 +63,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
 
   String _formatDateAndTime(Timestamp timestamp) {
     DateTime dateTime = timestamp.toDate();
-    dateTime = dateTime.add(Duration(hours: 0)); // Add 8 hours
+    dateTime = dateTime.add(Duration(hours: 8)); // Add 8 hours
     String formattedDate = DateFormat('dd MMMM yyyy, hh:mm a').format(dateTime);
     return formattedDate;
   }
@@ -53,7 +76,28 @@ class _dashboardScreenState extends State<dashboardScreen> {
           'Dashboard',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.cyan,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Fluttertoast.showToast(
+                  msg: "Signing Out...",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                  timeInSecForIosWeb: 1,
+                  backgroundColor: Colors.grey[200],
+                  textColor: Colors.black,
+                  fontSize: 13);
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+              );
+            },
+            icon: Icon(Icons.exit_to_app, color: Colors.white,),
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,9 +107,19 @@ class _dashboardScreenState extends State<dashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Hi, Driver',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text.rich(
+                  TextSpan(
+                    text: 'Hi, ',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    children: <TextSpan>[
+                      TextSpan(
+                        text: _driverName,
+                        style: TextStyle(
+                          color: Colors.cyan,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 SizedBox(height: 8),
                 FutureBuilder<tz.TZDateTime?>(
@@ -101,9 +155,10 @@ class _dashboardScreenState extends State<dashboardScreen> {
               child: Column(
                 children: [
                   Padding(
-                    padding: EdgeInsets.only(left: 10, top: 13, right: 10, bottom: 0),
+                    padding: EdgeInsets.only(
+                        left: 10, top: 13, right: 10, bottom: 0),
                     child: Text(
-                      'Pending Orders',
+                      'All Pending Orders',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -119,9 +174,13 @@ class _dashboardScreenState extends State<dashboardScreen> {
                   SizedBox(height: 5),
                   Expanded(
                     child: StreamBuilder(
-                      stream: FirebaseFirestore.instance.collection('orders').snapshots(),
-                      builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                      stream: FirebaseFirestore.instance
+                          .collection('orders')
+                          .snapshots(),
+                      builder:
+                          (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return Center(
                             child: CircularProgressIndicator(),
                           );
@@ -131,20 +190,34 @@ class _dashboardScreenState extends State<dashboardScreen> {
                           );
                         } else {
                           final docs = snapshot.data?.docs ?? [];
-                          final pendingOrders = docs.where((doc) => doc['orderStatus'] == 1).toList();
+                          final pendingOrders = docs
+                              .where((doc) => doc['orderStatus'] == 1)
+                              .toList();
                           if (pendingOrders.isEmpty) {
-                            return Center(
-                              child: Text('No pending orders available'),
+                            return const Center(
+                              child: Text(
+                                'No pending orders available',
+                                style: TextStyle(fontSize: 20),
+                              ),
                             );
                           } else {
                             return ListView.builder(
                               itemCount: pendingOrders.length,
                               itemBuilder: (context, index) {
-                                Map<String, dynamic> data = pendingOrders[index].data() as Map<String, dynamic>;
+                                Map<String, dynamic> data = pendingOrders[index]
+                                    .data() as Map<String, dynamic>;
                                 String imageUrl = data['imageUrl'];
                                 double lat = data['lat'];
                                 double long = data['long'];
                                 String orderId = data['orderId'];
+
+                                double earnings =
+                                    (data['totalPayment'] * 0.4) ?? 0.0;
+                                DateTime currentDate = DateTime.now();
+                                DateTime currentDatePlus8Hours =
+                                    currentDate.add(Duration(hours: 0));
+                                print(currentDatePlus8Hours);
+
                                 return GestureDetector(
                                   onTap: () {
                                     showDialog(
@@ -153,53 +226,112 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                         return AlertDialog(
                                           title: Text('Order Details'),
                                           content: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Text(data['title'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                                              Text('Quantity : ${data['quantity']}'),
-                                              Text('Order Date & Time: \n${_formatDateAndTime(data['orderDate'])}'),
+                                              Text(data['title'],
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 17)),
+                                              Text(
+                                                  'Quantity : ${data['quantity']}'),
+                                              Text(
+                                                  'Order Date & Time: \n${_formatDateAndTime(data['orderDate'])}'),
                                               SizedBox(height: 20),
-                                              Text('User Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                                              Text('User Details',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 17)),
                                               Text('Name: ${data['userName']}'),
-                                              Text('Phone Number: ${data['phoneNumber']}'),
-                                              Text('Address: ${data['shippingAddress']}'),
+                                              Text(
+                                                  'Phone Number: ${data['phoneNumber']}'),
+                                              Text(
+                                                  'Address: ${data['shippingAddress']}'),
                                               SizedBox(height: 20),
-                                              Text('Note Message', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                                              Text('Message: ${data['noteForDriver'].isEmpty ? 'Empty' : data['noteForDriver']}'),
+                                              Text('Note Message',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 17)),
+                                              Text(
+                                                  'Message: ${data['noteForDriver'].isEmpty ? 'Empty' : data['noteForDriver']}'),
                                               SizedBox(height: 20),
-                                              Text('Payment Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                                              Text('Total Payment : RM ${data['totalPayment']?.toStringAsFixed(2) ?? ''}'),
-                                              Text('Payment Method: ${data['paymentMethod']}'),
+                                              Text('Payment Details',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 17)),
+                                              Text(
+                                                  'Total Payment : RM ${data['totalPayment']?.toStringAsFixed(2) ?? ''}'),
+                                              Text(
+                                                  'Payment Method: ${data['paymentMethod']}'),
+                                              Text(
+                                                  'Earning: RM ${earnings.toStringAsFixed(2)}'),
                                             ],
                                           ),
                                           actions: [
                                             TextButton(
                                               onPressed: () async {
                                                 try {
-                                                  await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
+                                                  await FirebaseFirestore
+                                                      .instance
+                                                      .collection('orders')
+                                                      .doc(orderId)
+                                                      .update({
                                                     'orderStatus': 2,
                                                   });
+                                                  await FirebaseFirestore
+                                                      .instance
+                                                      .collection('drivers')
+                                                      .doc(widget.driverId)
+                                                      .update({
+                                                    'earnings':
+                                                        FieldValue.arrayUnion([
+                                                      {
+                                                        'productName':
+                                                            data['title'],
+                                                        'productQuantity':
+                                                            data['quantity'],
+                                                        'productImage':
+                                                            imageUrl,
+                                                        'userName':
+                                                            data['userName'],
+                                                        'userLocation': data[
+                                                            'shippingAddress'],
+                                                        'profitEarning':
+                                                            earnings,
+                                                        'currentDateTime':
+                                                            currentDatePlus8Hours,
+                                                      }
+                                                    ])
+                                                  });
                                                 } catch (error) {
-                                                  print('Error updating document: $error');
+                                                  print(
+                                                      'Error updating document: $error');
                                                 }
                                                 Navigator.pushReplacement(
                                                   context,
                                                   MaterialPageRoute(
-                                                    builder: (context) => OrderTrackingPage(
+                                                    builder: (context) =>
+                                                        OrderTrackingPage(
                                                       lat: lat,
                                                       long: long,
+                                                      orderId: orderId,
+                                                      driverId: widget.driverId,
                                                     ),
                                                   ),
                                                 );
                                               },
-                                              child: Text('Accept'),
+                                              child: Text('Accept', style: TextStyle(color: Colors.cyan),),
                                             ),
                                             TextButton(
                                               onPressed: () {
                                                 Navigator.of(context).pop();
                                               },
-                                              child: Text('Cancel'),
+                                              child: Text('Cancel', style: TextStyle(color: Colors.cyan),),
                                             ),
                                           ],
                                         );
@@ -210,17 +342,23 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                     leading: Image.network(
                                       imageUrl,
                                       width: 60,
-                                      height: 100,
+                                      height: 120,
+                                      // fit: BoxFit.cover,
                                     ),
                                     title: Text(
                                       data['title'] ?? '',
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text('Quantity : ${data['quantity']}'),
-                                        Text('Merchandise Subtotal : \nRM ${data['price']?.toStringAsFixed(2) ?? ''}'),
+                                        Text(
+                                            'Total Payment : RM ${data['totalPayment']?.toStringAsFixed(2) ?? ''}'),
+                                        Text(
+                                            'Delivery to : ${data['shippingAddress']}'),
                                       ],
                                     ),
                                   ),
@@ -235,8 +373,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
                 ],
               ),
             ),
-          )
-,
+          ),
         ],
       ),
     );

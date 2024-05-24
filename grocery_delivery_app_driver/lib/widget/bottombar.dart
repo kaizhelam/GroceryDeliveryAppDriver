@@ -13,7 +13,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile', style: TextStyle(color: Colors.white),),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.cyan,
       ),
     );
   }
