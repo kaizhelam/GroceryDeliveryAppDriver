@@ -14,7 +14,7 @@ class EarningScreen extends StatefulWidget {
 class _EarningScreenState extends State<EarningScreen> {
   DateTime _selectedDate = DateTime.now();
   double totalEarnings = 0.0;
-  int earningsDataLength = 0; // Variable to store the length of earnings data
+  int earningsDataLength = 0;
 
   @override
   void initState() {
@@ -32,7 +32,6 @@ class _EarningScreenState extends State<EarningScreen> {
         final List<dynamic>? earningsData = snapshot['earnings'];
 
         if (earningsData != null) {
-          // Filter earnings for the selected date
           final earningsForSelectedDate = earningsData.where((earning) {
             DateTime earningDate =
                 (earning['currentDateTime'] as Timestamp).toDate();
@@ -40,12 +39,7 @@ class _EarningScreenState extends State<EarningScreen> {
                 earningDate.month == _selectedDate.month &&
                 earningDate.day == _selectedDate.day;
           }).toList();
-
-          // Calculate total earnings for the selected date
-          totalEarnings = earningsForSelectedDate.fold(
-              0.0, (sum, earning) => sum + (earning['profitEarning'] ?? 0.0));
-
-          // Update earnings data length
+          totalEarnings = earningsForSelectedDate.fold(0.0, (sum, earning) => sum + (earning['profitEarning'] ?? 0.0));
           earningsDataLength = earningsForSelectedDate.length;
         }
       } else {
@@ -55,33 +49,31 @@ class _EarningScreenState extends State<EarningScreen> {
       print('Error fetching earnings: $error');
     }
     setState(
-        () {}); // Update the UI with the total earnings and earnings data length
+        () {});
   }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2000), // Allow selection from the year 2000
-      lastDate: DateTime.now(), // Allow selection up to the year 2100
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(primary: Colors.cyan),
+            colorScheme: const ColorScheme.light(primary: Colors.cyan),
           ),
           child: child!,
         );
       },
     );
-
     if (pickedDate != null && pickedDate != _selectedDate) {
       setState(() {
         _selectedDate = pickedDate;
-        // Reset totalEarnings and earningsDataLength when date changes
         totalEarnings = 0.0;
         earningsDataLength = 0;
       });
-      fetchTotalEarnings(); // Fetch earnings for the selected date
+      fetchTotalEarnings();
     }
   }
 
@@ -111,7 +103,6 @@ class _EarningScreenState extends State<EarningScreen> {
                 return const Center(child: Text('Product not found'));
               }
 
-              // Fetch the ratingReview array from the product document
               final List<dynamic> earningArray =
                   productSnapshot.data!['earnings'];
 
@@ -143,7 +134,7 @@ class _EarningScreenState extends State<EarningScreen> {
                     if (timestamp != null) {
                       final DateTime dateTime = timestamp.toDate();
                       final DateTime dateTimePlus8Hours =
-                          dateTime.add(Duration(hours: 8));
+                          dateTime.add(const Duration(hours: 8));
                       formattedDateTime = DateFormat('yyyy-MM-dd HH:mm:ss')
                           .format(dateTimePlus8Hours);
                     }
@@ -209,7 +200,7 @@ class _EarningScreenState extends State<EarningScreen> {
     );
   }
 
-  Future<void> _viewTotalEarnings(BuildContext context) async {
+  Future<double> _fetchTotalEarnings() async {
     double totalEarnings = 0.0;
 
     try {
@@ -221,7 +212,6 @@ class _EarningScreenState extends State<EarningScreen> {
         final List<dynamic>? earningsData = snapshot['earnings'];
 
         if (earningsData != null) {
-          // Calculate total earnings from all earnings data
           totalEarnings = earningsData.fold(
               0.0, (sum, earning) => sum + (earning['profitEarning'] ?? 0.0));
         }
@@ -232,22 +222,25 @@ class _EarningScreenState extends State<EarningScreen> {
       print('Error fetching earnings: $error');
     }
 
-    // Display the total earnings in a dialog
+    return totalEarnings;
+  }
+
+  void _showTotalEarningsDialog(BuildContext context, double totalEarnings) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Total Earnings'),
+          title: const Text('Total Earnings'),
           content: Card(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'RM ${totalEarnings.toStringAsFixed(2)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
@@ -261,7 +254,7 @@ class _EarningScreenState extends State<EarningScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Close', style: TextStyle(color: Colors.cyan),),
+              child: const Text('Close', style: TextStyle(color: Colors.cyan)),
             ),
           ],
         );
@@ -269,11 +262,19 @@ class _EarningScreenState extends State<EarningScreen> {
     );
   }
 
+  Future<void> _viewTotalEarnings(BuildContext context) async {
+    double totalEarnings = await _fetchTotalEarnings();
+
+    if (context.mounted) {
+      _showTotalEarningsDialog(context, totalEarnings);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Earning',
           style: TextStyle(color: Colors.white),
         ),
@@ -286,57 +287,57 @@ class _EarningScreenState extends State<EarningScreen> {
           children: [
             Text(
               '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-              style: TextStyle(fontSize: 24),
+              style: const TextStyle(fontSize: 24),
             ),
-            SizedBox(height: 10), // Add some spacing
+            const SizedBox(height: 10),
             Text(
               'Total Earnings for today: RM ${totalEarnings.toStringAsFixed(2)}',
-              style: TextStyle(fontSize: 20),
+              style: const TextStyle(fontSize: 20),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
               'Total Delivery Time for today: $earningsDataLength',
-              style: TextStyle(fontSize: 20),
+              style: const TextStyle(fontSize: 20),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () => _selectDate(context),
-              icon: Icon(Icons.calendar_today),
+              icon: const Icon(Icons.calendar_today),
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all<Color>(
-                    Colors.cyan), // Green background color
+                    Colors.cyan),
                 foregroundColor: MaterialStateProperty.all<Color>(
-                    Colors.white), // White text color
+                    Colors.white),
               ),
-              label: Text('Pick Date'),
+              label: const Text('Pick Date'),
             ),
-            SizedBox(
+            const SizedBox(
               height: 15,
             ),
             ElevatedButton.icon(
               onPressed: () => _viewAllTask(context),
-              icon: Icon(Icons.task),
+              icon: const Icon(Icons.task),
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all<Color>(
-                    Colors.cyan), // Green background color
+                    Colors.cyan),
                 foregroundColor: MaterialStateProperty.all<Color>(
-                    Colors.white), // White text color
+                    Colors.white),
               ),
-              label: Text('View All Accepted Orders Details'),
+              label: const Text('View All Accepted Orders Details'),
             ),
-            SizedBox(
+            const SizedBox(
               height: 15,
             ),
             ElevatedButton.icon(
               onPressed: () => _viewTotalEarnings(context),
-              icon: Icon(Icons.attach_money),
+              icon: const Icon(Icons.attach_money),
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all<Color>(
-                    Colors.cyan), // Green background color
+                    Colors.cyan),
                 foregroundColor: MaterialStateProperty.all<Color>(
-                    Colors.white), // White text color
+                    Colors.white),
               ),
-              label: Text('View Total Earnings'),
+              label: const Text('View Total Earnings'),
             ),
           ],
         ),

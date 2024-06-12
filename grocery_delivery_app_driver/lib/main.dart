@@ -10,10 +10,10 @@ import 'package:grocery_delivery_app_driver/widget/profile.dart';
 import 'firebase_options.dart';
 
 void main()async  {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensure that Flutter has initialized properly
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-  ); // Initialize Firebase
+  );
   runApp(MyApp());
 }
 
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: LoginScreen(),
+      home: const LoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -63,7 +63,7 @@ class _MainScreenState extends State<MainScreen> {
           });
         },
         selectedItemColor: Colors.cyan,
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',

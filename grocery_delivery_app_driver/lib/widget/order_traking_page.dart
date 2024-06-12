@@ -10,7 +10,7 @@ import 'package:grocery_delivery_app_driver/widget/constants.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:grocery_delivery_app_driver/widget/earning_screen.dart';
 import 'package:location/location.dart';
-import 'package:intl/intl.dart'; // Import DateFormat to format the arrival time
+import 'package:intl/intl.dart';
 
 class OrderTrackingPage extends StatefulWidget {
   const OrderTrackingPage({
@@ -55,7 +55,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
     location.onLocationChanged.listen(
       (newLoc) {
-        // print('New location received: $newLoc');
         currentLocation = newLoc;
         googleMapController.animateCamera(
           CameraUpdate.newCameraPosition(
@@ -105,10 +104,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   @override
   void initState() {
-    // sourceLocation = LatLng(widget.lat, widget.long);
     userDestination = LatLng(widget.lat, widget.long);
-    print(widget.lat);
-    print(widget.long);
     getCurrentLocation();
     setCustomMarkerIcon();
     getPolyPoints();
@@ -129,53 +125,31 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   void _refreshPage() {
     setState(() {
-      // Set isLoading to true to indicate that loading has started
       isLoading = true;
     });
-
-    // Perform your refresh logic here
-
-    // After refresh is complete, set isLoading to false
     setState(() {
       isLoading = false;
     });
   }
 
   double calculateDistance(LatLng point1, LatLng point2) {
-    const double radiusEarth = 6371; // Radius of the Earth in kilometers
-    double lat1 = _toRadians(point1.latitude);
-    double lon1 = _toRadians(point1.longitude);
-    double lat2 = _toRadians(point2.latitude);
+    const double radiusEarth = 6371; double lat1 = _toRadians(point1.latitude);double lon1 = _toRadians(point1.longitude);double lat2 = _toRadians(point2.latitude);
     double lon2 = _toRadians(point2.longitude);
-
     double dLat = lat2 - lat1;
     double dLon = lon2 - lon1;
-
-    double a = pow(sin(dLat / 2), 2) +
-        cos(lat1) * cos(lat2) * pow(sin(dLon / 2), 2);
-
+    double a = pow(sin(dLat / 2), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon / 2), 2);
     double c = 2 * asin(sqrt(a));
-
     return radiusEarth * c;
   }
-
   double _toRadians(double degree) {
     return degree * pi / 180;
   }
-
   final double arrivalThreshold = 0.17;
-  double distance = 0.0;
-  String formattedArrivalTime = "";
-  final double averageSpeed = 30;
-
+  double distance = 0.0; String formattedArrivalTime = ""; final double averageSpeed = 30;
   void _checkArrival(BuildContext context) {
     if (currentLocation != null && userDestination != null) {
-      double distanceToDestination = calculateDistance(
-        LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
-        userDestination!,
+      double distanceToDestination = calculateDistance(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), userDestination!,
       );
-      print('Distance to destination: $distanceToDestination km');
-
       if (distanceToDestination <= arrivalThreshold) {
         FirebaseFirestore.instance
             .collection('orders')
@@ -183,14 +157,13 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             .update({
           'orderStatus': 3,
         }).then((value) {
-          Future.delayed(Duration(seconds: 4), () {
+          Future.delayed(const Duration(seconds: 4), () {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (context) => MainScreen(driverId: widget.driverId),
               ),
             );
-
             Fluttertoast.showToast(
               msg: "Product Delivery & Arrived Destination",
               toastLength: Toast.LENGTH_SHORT,
@@ -220,7 +193,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       onWillPop: () async => false,
       child: Scaffold(
         body: isLoading
-            ? Center(
+            ? const Center(
           child: CircularProgressIndicator(),
         )
             : currentLocation == null
@@ -228,9 +201,9 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: ElevatedButton(
                   onPressed: _refreshPage,
                   style: ButtonStyle(
@@ -241,7 +214,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                       Colors.white,
                     ),
                   ),
-                  child: Text(
+                  child: const Text(
                     "Open Live Google Map & Navigate to User Destination",
                     style: TextStyle(
                       color: Colors.white,
@@ -262,7 +235,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           ),
           polylines: {
             Polyline(
-              polylineId: PolylineId("route"),
+              polylineId: const PolylineId("route"),
               points: polylineCoordinates,
               color: primaryColor,
               width: 6,
@@ -270,7 +243,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           },
           markers: {
             Marker(
-              markerId: MarkerId("currentLocation"),
+              markerId: const MarkerId("currentLocation"),
               icon: sourceIcon,
               position: LatLng(
                 currentLocation!.latitude!,
@@ -278,10 +251,10 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               ),
             ),
             Marker(
-              markerId: MarkerId("source"),
+              markerId: const MarkerId("source"),
               position: userDestination,
             ),
-            Marker(
+            const Marker(
               markerId: MarkerId("destination"),
               position: sourceLocation,
             ),
@@ -294,9 +267,3 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     );
   }
 }
-
-// void main() {
-//   runApp(MaterialApp(
-//     home: OrderTrackingPage(),
-//   ));
-// }

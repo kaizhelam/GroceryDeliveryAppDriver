@@ -12,7 +12,7 @@ class _bottomBarScreenState extends State<bottomBarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile', style: TextStyle(color: Colors.white),),
+        title: const Text('Profile', style: TextStyle(color: Colors.white),),
         backgroundColor: Colors.cyan,
       ),
     );

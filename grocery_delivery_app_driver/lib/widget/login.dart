@@ -11,8 +11,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  TextEditingController _driverIdController = TextEditingController();
-  bool _isLoading = false; // Add a boolean to track loading state
+  final TextEditingController _driverIdController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -24,7 +24,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('GoGrocery Merchant', style: TextStyle(color: Colors.white)),
+        title: const Text('GoGrocery Merchant',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.cyan,
       ),
       body: Stack(
@@ -45,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // Welcome back text
-                        Center(
+                        const Center(
                           child: Column(
                             children: [
                               Text(
@@ -56,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Colors.white,
                                 ),
                               ),
-                              SizedBox(height: 10.0), // Adjust the spacing between title and subtitle
+                              SizedBox(height: 10.0),
                               Text(
                                 'Please enter your Driver ID to login',
                                 style: TextStyle(
@@ -67,18 +68,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                         ),
-                        SizedBox(height: 20.0),
+                        const SizedBox(height: 20.0),
                         // Driver icon
-                        Icon(
+                        const Icon(
                           Icons.delivery_dining_rounded,
                           size: 150.0,
                           color: Colors.white,
                         ),
-                        SizedBox(height: 20.0),
+                        const SizedBox(height: 20.0),
                         // Text field for driver ID
                         TextField(
                           controller: _driverIdController,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Driver ID',
                             labelStyle: TextStyle(color: Colors.white),
                             enabledBorder: OutlineInputBorder(
@@ -88,17 +89,20 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderSide: BorderSide(color: Colors.white),
                             ),
                           ),
-                          style: TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.white),
                         ),
-                        SizedBox(height: 25.0),
+                        const SizedBox(height: 25.0),
                         // Login button
                         ElevatedButton(
                           onPressed: _isLoading ? null : () => _loginUser(),
                           style: ButtonStyle(
-                            backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
-                            foregroundColor: MaterialStateProperty.all<Color>(Colors.cyan),
+                            backgroundColor:
+                                MaterialStateProperty.all<Color>(Colors.white),
+                            foregroundColor:
+                                MaterialStateProperty.all<Color>(Colors.cyan),
                           ),
-                          child: Text('Login', style: TextStyle(fontSize: 20)),
+                          child: const Text('Login',
+                              style: TextStyle(fontSize: 20)),
                         ),
                       ],
                     ),
@@ -108,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           if (_isLoading)
-            Center(
+            const Center(
               child: CircularProgressIndicator(
                 color: Colors.cyan,
               ),
@@ -118,10 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-
   void _loginUser() {
     setState(() {
-      _isLoading = true; // Set loading state to true when user clicks login button
+      _isLoading = true;
     });
 
     String driverId = _driverIdController.text.trim();
@@ -138,15 +141,18 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = false;
       });
     } else {
-      FirebaseFirestore.instance.collection('drivers').get().then((querySnapshot) {
+      FirebaseFirestore.instance
+          .collection('drivers')
+          .get()
+          .then((querySnapshot) {
         bool isDriverFound = false;
         String driverName = "";
         String driverEmail = "";
         String driverPhoneNumber = "";
-        String driverid = "";
+        String driverID = "";
         querySnapshot.docs.forEach((doc) {
           if (doc.data()['driverId'] == driverId) {
-            driverid = doc.data()['driverId'];
+            driverID = doc.data()['driverId'];
             isDriverFound = true;
             Fluttertoast.showToast(
                 msg: "Logged In...",
@@ -158,7 +164,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 fontSize: 13);
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => MainScreen(driverId: driverid)),
+              MaterialPageRoute(
+                  builder: (context) => MainScreen(driverId: driverID)),
             );
           }
         });
@@ -173,10 +180,9 @@ class _LoginScreenState extends State<LoginScreen> {
               fontSize: 13);
         }
         setState(() {
-          _isLoading = false; // Set loading state back to false
+          _isLoading = false;
         });
       }).catchError((error) {
-        // Error fetching data from Firestore
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $error'),
@@ -184,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
         setState(() {
-          _isLoading = false; // Set loading state back to false
+          _isLoading = false;
         });
       });
     }

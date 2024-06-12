@@ -15,11 +15,11 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late TextEditingController _nameController = TextEditingController();
-  late TextEditingController _emailController = TextEditingController();
-  late TextEditingController _phoneNumberController = TextEditingController();
-  late TextEditingController _numberPlateController = TextEditingController();
-  String _selectedVehicleType = 'Car'; // Default value
+  late final TextEditingController _nameController = TextEditingController();
+  late final TextEditingController _emailController = TextEditingController();
+  late final TextEditingController _phoneNumberController = TextEditingController();
+  late final TextEditingController _numberPlateController = TextEditingController();
+  String _selectedVehicleType = 'Car';
 
   bool _isEditing = false;
 
@@ -41,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _emailController.text = doc['email'];
           _phoneNumberController.text = doc['phoneNumber'];
           _numberPlateController.text = doc['vehicleNumberPlate'];
-          _selectedVehicleType = doc['vehicleType'] ?? 'Car'; // Set default value if null or invalid
+          _selectedVehicleType = doc['vehicleType'] ?? 'Car';
         });
       }
     }).catchError((error) {
@@ -92,7 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Profile',
           style: TextStyle(color: Colors.white),
         ),
@@ -107,14 +107,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _nameController,
               enabled: _isEditing,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Name',
                 labelStyle: TextStyle(color: Colors.black),
               ),
@@ -123,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: _emailController,
               enabled: _isEditing,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Email',
                 labelStyle: TextStyle(color: Colors.black),
               ),
@@ -132,17 +132,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: _phoneNumberController,
               enabled: _isEditing,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Phone Number',
-                labelStyle: TextStyle(color: Colors.black),
-              ),
-              style: TextStyle(color: _isEditing ? null : Colors.black),
-            ),
-            TextField(
-              controller: _numberPlateController,
-              enabled: _isEditing,
-              decoration: InputDecoration(
-                labelText: 'Vehicle Number Plate',
                 labelStyle: TextStyle(color: Colors.black),
               ),
               style: TextStyle(color: _isEditing ? null : Colors.black),
@@ -161,17 +152,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   value: value,
                   child: Text(
                     value,
-                    style: TextStyle(color: Colors.black, fontSize: 18), // Set text color to black
+                    style: const TextStyle(color: Colors.black, fontSize: 18),
                   ),
                 );
               }).toList(),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Vehicle Type',
                 labelStyle: TextStyle(color: Colors.black),
               ),
               style: TextStyle(color: _isEditing ? null : Colors.black),
             ),
-            if (_isEditing) SizedBox(height: 20),
+            TextField(
+              controller: _numberPlateController,
+              enabled: _isEditing,
+              decoration: const InputDecoration(
+                labelText: 'Vehicle Number Plate',
+                labelStyle: TextStyle(color: Colors.black),
+              ),
+              style: TextStyle(color: _isEditing ? null : Colors.black),
+            ),
+            if (_isEditing) const SizedBox(height: 20),
             if (_isEditing)
               ElevatedButton(
                 onPressed: _saveChanges,
@@ -181,7 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   foregroundColor:
                   MaterialStateProperty.all<Color>(Colors.white),
                 ),
-                child: Text('Save Changes'),
+                child: const Text('Save Changes'),
               ),
           ],
         ),

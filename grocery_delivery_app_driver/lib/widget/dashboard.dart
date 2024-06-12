@@ -31,7 +31,6 @@ class _dashboardScreenState extends State<dashboardScreen> {
   }
 
   void fetchDriverName() {
-    // Fetch driver's data from Firestore using driverId
     FirebaseFirestore.instance
         .collection('drivers')
         .doc(widget.driverId)
@@ -48,22 +47,18 @@ class _dashboardScreenState extends State<dashboardScreen> {
   }
 
   void updateTimePeriodically() {
-    Timer.periodic(Duration(seconds: 60), (timer) {
+    Timer.periodic(const Duration(seconds: 60), (timer) {
       setState(() {
-        // Update the UI with the current time
-        // Call getCurrentTime to fetch the current time
-        getCurrentTime(_timeZone).then((time) {
-          // Update the UI with the new time
-        });
+        getCurrentTime(_timeZone).then((time) {});
       });
     });
   }
 
-  String _timeZone = 'Asia/Kuala_Lumpur'; // Set timezone to Malaysia
+  final String _timeZone = 'Asia/Kuala_Lumpur';
 
   String _formatDateAndTime(Timestamp timestamp) {
     DateTime dateTime = timestamp.toDate();
-    dateTime = dateTime.add(Duration(hours: 8)); // Add 8 hours
+    dateTime = dateTime.add(const Duration(hours: 8));
     String formattedDate = DateFormat('dd MMMM yyyy, hh:mm a').format(dateTime);
     return formattedDate;
   }
@@ -72,7 +67,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Dashboard',
           style: TextStyle(color: Colors.white),
         ),
@@ -95,7 +90,10 @@ class _dashboardScreenState extends State<dashboardScreen> {
                 ),
               );
             },
-            icon: Icon(Icons.exit_to_app, color: Colors.white,),
+            icon: const Icon(
+              Icons.exit_to_app,
+              color: Colors.white,
+            ),
           ),
         ],
       ),
@@ -103,44 +101,45 @@ class _dashboardScreenState extends State<dashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.only(left: 20, top: 10, right: 10),
+            padding: const EdgeInsets.only(left: 20, top: 10, right: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text.rich(
                   TextSpan(
                     text: 'Hi, ',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold),
                     children: <TextSpan>[
                       TextSpan(
                         text: _driverName,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.cyan,
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 FutureBuilder<tz.TZDateTime?>(
                   future: getCurrentTime(_timeZone),
                   builder: (context, AsyncSnapshot<tz.TZDateTime?> snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
+                      return const CircularProgressIndicator();
                     } else if (snapshot.hasError) {
                       return Text('Error: ${snapshot.error}');
                     } else {
                       if (snapshot.data != null) {
                         return Text(
                           'Current Date & Time: ${_formatDateTime(snapshot.data!)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey,
                           ),
                         );
                       } else {
-                        return Text('No data available');
+                        return const Text('No data available');
                       }
                     }
                   },
@@ -154,7 +153,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
               margin: EdgeInsets.all(13),
               child: Column(
                 children: [
-                  Padding(
+                  const Padding(
                     padding: EdgeInsets.only(
                         left: 10, top: 13, right: 10, bottom: 0),
                     child: Text(
@@ -165,13 +164,13 @@ class _dashboardScreenState extends State<dashboardScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 10),
-                  Divider(
+                  const SizedBox(height: 10),
+                  const Divider(
                     color: Colors.grey,
                     thickness: 1,
                     height: 10,
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 5),
                   Expanded(
                     child: StreamBuilder(
                       stream: FirebaseFirestore.instance
@@ -181,7 +180,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
                           (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return Center(
+                          return const Center(
                             child: CircularProgressIndicator(),
                           );
                         } else if (snapshot.hasError) {
@@ -215,8 +214,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                     (data['totalPayment'] * 0.4) ?? 0.0;
                                 DateTime currentDate = DateTime.now();
                                 DateTime currentDatePlus8Hours =
-                                    currentDate.add(Duration(hours: 0));
-                                print(currentDatePlus8Hours);
+                                    currentDate.add(const Duration(hours: 0));
 
                                 return GestureDetector(
                                   onTap: () {
@@ -224,14 +222,14 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                       context: context,
                                       builder: (BuildContext context) {
                                         return AlertDialog(
-                                          title: Text('Order Details'),
+                                          title: const Text('Order Details'),
                                           content: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(data['title'],
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       fontSize: 17)),
@@ -239,8 +237,8 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                                   'Quantity : ${data['quantity']}'),
                                               Text(
                                                   'Order Date & Time: \n${_formatDateAndTime(data['orderDate'])}'),
-                                              SizedBox(height: 20),
-                                              Text('User Details',
+                                              const SizedBox(height: 20),
+                                              const Text('User Details',
                                                   style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.bold,
@@ -250,16 +248,16 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                                   'Phone Number: ${data['phoneNumber']}'),
                                               Text(
                                                   'Address: ${data['shippingAddress']}'),
-                                              SizedBox(height: 20),
-                                              Text('Note Message',
+                                              const SizedBox(height: 20),
+                                              const Text('Note Message',
                                                   style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       fontSize: 17)),
                                               Text(
                                                   'Message: ${data['noteForDriver'].isEmpty ? 'Empty' : data['noteForDriver']}'),
-                                              SizedBox(height: 20),
-                                              Text('Payment Details',
+                                              const SizedBox(height: 20),
+                                              const Text('Payment Details',
                                                   style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.bold,
@@ -325,13 +323,21 @@ class _dashboardScreenState extends State<dashboardScreen> {
                                                   ),
                                                 );
                                               },
-                                              child: Text('Accept', style: TextStyle(color: Colors.cyan),),
+                                              child: const Text(
+                                                'Accept',
+                                                style: TextStyle(
+                                                    color: Colors.cyan),
+                                              ),
                                             ),
                                             TextButton(
                                               onPressed: () {
                                                 Navigator.of(context).pop();
                                               },
-                                              child: Text('Cancel', style: TextStyle(color: Colors.cyan),),
+                                              child: const Text(
+                                                'Cancel',
+                                                style: TextStyle(
+                                                    color: Colors.cyan),
+                                              ),
                                             ),
                                           ],
                                         );
@@ -381,7 +387,7 @@ class _dashboardScreenState extends State<dashboardScreen> {
 
   Future<tz.TZDateTime> getCurrentTime(String timeZone) async {
     tz.Location location = tz.getLocation(timeZone);
-    return await tz.TZDateTime.now(location);
+    return tz.TZDateTime.now(location);
   }
 
   String _formatDateTime(tz.TZDateTime dateTime) {
